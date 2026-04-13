@@ -254,13 +254,18 @@ function extractColors($: cheerio.CheerioAPI): ColorPalette | undefined {
 
 function extractFonts($: cheerio.CheerioAPI): string[] {
   const fonts: string[] = [];
+  const sanitizeFont = (f: string) => f.replace(/[^a-zA-Z0-9 \-]/g, "").trim();
+
   $('link[rel="stylesheet"]').each((_, el) => {
     const href = $(el).attr("href") ?? "";
     try {
       const parsed = new URL(href, "https://example.com");
       if (parsed.hostname === "fonts.googleapis.com") {
         const match = href.match(/family=([^&:]+)/);
-        if (match) fonts.push(decodeURIComponent(match[1]).replace(/\+/g, " "));
+        if (match) {
+          const name = sanitizeFont(decodeURIComponent(match[1]).replace(/\+/g, " "));
+          if (name) fonts.push(name);
+        }
       }
     } catch {
       // ignore malformed URLs
@@ -271,8 +276,8 @@ function extractFonts($: cheerio.CheerioAPI): string[] {
     const css = $(el).html() ?? "";
     const fontFaceMatches = css.matchAll(/font-family:\s*['"]?([^'";\n,]+)/g);
     for (const m of fontFaceMatches) {
-      const font = m[1].trim();
-      if (!fonts.includes(font)) fonts.push(font);
+      const font = sanitizeFont(m[1].trim());
+      if (font && !fonts.includes(font)) fonts.push(font);
     }
   });
 

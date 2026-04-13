@@ -109,6 +109,8 @@ export default function ReviewPage() {
   );
   const effectiveOverview = overviewText ?? baseDoc.businessOverview;
 
+  const canProceed = missingFields.length === 0 || allMissingFilled;
+
   function handleMissingChange(field: string, value: string) {
     setMissingValues((v) => ({ ...v, [field]: value }));
   }
@@ -275,7 +277,7 @@ export default function ReviewPage() {
           <button
             type="button"
             onClick={handleApprove}
-            disabled={saving || (missingFields.length > 0 && !allMissingFilled)}
+            disabled={saving || !canProceed}
             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl px-6 py-3 text-sm transition-colors flex items-center justify-center gap-2"
           >
             {saving ? (

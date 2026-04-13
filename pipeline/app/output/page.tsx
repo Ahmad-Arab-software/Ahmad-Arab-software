@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { usePipeline } from "@/lib/PipelineContext";
 import { DesignDocument, MergedBusinessData } from "@/types/pipeline";
 
+const DEFAULT_FONT = "Inter";
+
 export default function OutputPage() {
   const router = useRouter();
   const { state, reset } = usePipeline();
@@ -167,9 +169,11 @@ function generateWebsiteHtml(doc: DesignDocument, merged: MergedBusinessData): s
 
   // Sanitize font names — only allow alphanumeric, spaces, and hyphens
   const sanitizeFont = (f: string) =>
-    f.replace(/[^a-zA-Z0-9 \-]/g, "").trim() || "Inter";
+    f.replace(/[^a-zA-Z0-9 \-]/g, "").trim() || DEFAULT_FONT;
   const headingFont = sanitizeFont(doc.typography.headingFont);
   const bodyFont = sanitizeFont(doc.typography.bodyFont);
+  // Google Fonts expects spaces as '+' in the family parameter
+  const headingFontParam = headingFont.replace(/ /g, "+");
 
   return `<!DOCTYPE html>
 <html lang="${escapeHtml(doc.language ?? "nl")}">
@@ -178,7 +182,7 @@ function generateWebsiteHtml(doc: DesignDocument, merged: MergedBusinessData): s
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(name)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(headingFont)}:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=${headingFontParam}:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: '${escapeHtml(bodyFont)}', sans-serif; background: ${escapeHtml(background ?? "#fff")}; color: ${escapeHtml(text ?? "#111")}; }
