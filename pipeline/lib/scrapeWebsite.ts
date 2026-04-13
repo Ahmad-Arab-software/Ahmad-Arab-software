@@ -9,11 +9,28 @@ import {
   Service,
 } from "@/types/pipeline";
 
-// Restrict scraping to HTTP/HTTPS only to prevent SSRF via other schemes
+// Restrict scraping to HTTP/HTTPS only and block private/internal IPs to prevent SSRF
 function isSafeUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    // Block localhost and private IP ranges
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host.startsWith("10.") ||
+      host.startsWith("192.168.") ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+      host.endsWith(".local") ||
+      host.endsWith(".internal") ||
+      host === "metadata.google.internal" ||
+      host === "169.254.169.254"
+    ) {
+      return false;
+    }
+    return true;
   } catch {
     return false;
   }
@@ -239,9 +256,14 @@ function extractFonts($: cheerio.CheerioAPI): string[] {
   const fonts: string[] = [];
   $('link[rel="stylesheet"]').each((_, el) => {
     const href = $(el).attr("href") ?? "";
-    if (href.includes("fonts.googleapis.com")) {
-      const match = href.match(/family=([^&:]+)/);
-      if (match) fonts.push(decodeURIComponent(match[1]).replace(/\+/g, " "));
+    try {
+      const parsed = new URL(href, "https://example.com");
+      if (parsed.hostname === "fonts.googleapis.com") {
+        const match = href.match(/family=([^&:]+)/);
+        if (match) fonts.push(decodeURIComponent(match[1]).replace(/\+/g, " "));
+      }
+    } catch {
+      // ignore malformed URLs
     }
   });
 

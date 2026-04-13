@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { usePipeline } from "@/lib/PipelineContext";
 import { DesignDocument, MissingField, MergedBusinessData, PageSection } from "@/types/pipeline";
 
+const DEFAULT_FONT = "Inter";
+
 const MISSING_FIELD_LABELS: Record<string, string> = {
   name: "Bedrijfsnaam",
   phone: "Telefoonnummer",
@@ -64,8 +66,8 @@ export default function ReviewPage() {
         accent: "#f59e0b",
       },
       typography: {
-        headingFont: merged.fonts[0] ?? "Inter",
-        bodyFont: merged.fonts[1] ?? merged.fonts[0] ?? "Inter",
+        headingFont: merged.fonts[0] ?? DEFAULT_FONT,
+        bodyFont: merged.fonts[1] ?? merged.fonts[0] ?? DEFAULT_FONT,
       },
       sections: ALL_SECTIONS.map((s) => ({
         ...s,

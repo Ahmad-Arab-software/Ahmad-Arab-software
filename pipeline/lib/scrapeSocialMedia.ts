@@ -2,11 +2,24 @@ import * as cheerio from "cheerio";
 import axios from "axios";
 import { BusinessData, ImageData } from "@/types/pipeline";
 
-// Restrict to HTTP/HTTPS only (SSRF guard)
+// Allowed social media hostnames
+const ALLOWED_SOCIAL_HOSTS = new Set([
+  "instagram.com",
+  "www.instagram.com",
+  "facebook.com",
+  "www.facebook.com",
+  "fb.com",
+  "www.fb.com",
+  "tiktok.com",
+  "www.tiktok.com",
+]);
+
+// Only allow requests to known social media platforms (prevents SSRF)
 function isSafeUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    return ALLOWED_SOCIAL_HOSTS.has(parsed.hostname.toLowerCase());
   } catch {
     return false;
   }
@@ -44,11 +57,11 @@ export async function scrapeSocialMedia(links: string[]): Promise<BusinessData> 
 async function scrapeSinglePlatform(url: string): Promise<BusinessData> {
   const host = new URL(url).hostname.toLowerCase();
 
-  if (host.includes("instagram.com")) return scrapeInstagram(url);
-  if (host.includes("facebook.com") || host.includes("fb.com")) return scrapeFacebook(url);
-  if (host.includes("tiktok.com")) return scrapeTikTok(url);
+  if (host === "instagram.com" || host === "www.instagram.com") return scrapeInstagram(url);
+  if (host === "facebook.com" || host === "www.facebook.com" || host === "fb.com" || host === "www.fb.com") return scrapeFacebook(url);
+  if (host === "tiktok.com" || host === "www.tiktok.com") return scrapeTikTok(url);
 
-  // Generic fallback
+  // Generic fallback (still within the ALLOWED_SOCIAL_HOSTS allowlist)
   return scrapeGenericSocial(url);
 }
 

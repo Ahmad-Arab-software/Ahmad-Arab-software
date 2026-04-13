@@ -8,11 +8,28 @@ import {
   GeoCoordinates,
 } from "@/types/pipeline";
 
-// Restrict to HTTP/HTTPS only (SSRF guard)
+// Allowed Google Maps hostnames — only accept Google Maps URLs (prevents SSRF)
+const ALLOWED_GOOGLE_HOSTS = new Set([
+  "maps.google.com",
+  "maps.google.nl",
+  "maps.google.be",
+  "www.google.com",
+  "www.google.nl",
+  "www.google.be",
+  "maps.app.goo.gl",
+  "goo.gl",
+]);
+
+// Only allow Google Maps URLs
 function isSafeUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    if (ALLOWED_GOOGLE_HOSTS.has(host)) return true;
+    // Accept any maps.google.* domain
+    if (host.startsWith("maps.google.")) return true;
+    return false;
   } catch {
     return false;
   }
@@ -25,7 +42,7 @@ export async function scrapeGoogleBusiness(url: string): Promise<BusinessData> {
 
   // For Google Maps short URLs, follow the redirect to get the full URL
   let resolvedUrl = url;
-  if (url.includes("maps.app.goo.gl") || url.includes("goo.gl")) {
+  if (new URL(url).hostname === "maps.app.goo.gl" || new URL(url).hostname === "goo.gl") {
     try {
       const r = await axios.get(url, {
         timeout: 10000,
@@ -35,7 +52,11 @@ export async function scrapeGoogleBusiness(url: string): Promise<BusinessData> {
             "Mozilla/5.0 (compatible; WebsiteBuilderBot/1.0; +https://ahmadarab.nl)",
         },
       });
-      resolvedUrl = r.request?.res?.responseUrl ?? r.config.url ?? url;
+      const candidate: string = r.request?.res?.responseUrl ?? r.config.url ?? url;
+      // Re-validate the resolved URL — it must still be a Google Maps URL
+      if (isSafeUrl(candidate)) {
+        resolvedUrl = candidate;
+      }
     } catch {
       resolvedUrl = url;
     }

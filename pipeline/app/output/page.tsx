@@ -165,6 +165,12 @@ function generateWebsiteHtml(doc: DesignDocument, merged: MergedBusinessData): s
     }
   }).join("\n");
 
+  // Sanitize font names — only allow alphanumeric, spaces, and hyphens
+  const sanitizeFont = (f: string) =>
+    f.replace(/[^a-zA-Z0-9 \-]/g, "").trim() || "Inter";
+  const headingFont = sanitizeFont(doc.typography.headingFont);
+  const bodyFont = sanitizeFont(doc.typography.bodyFont);
+
   return `<!DOCTYPE html>
 <html lang="${escapeHtml(doc.language ?? "nl")}">
 <head>
@@ -172,11 +178,11 @@ function generateWebsiteHtml(doc: DesignDocument, merged: MergedBusinessData): s
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(name)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(doc.typography.headingFont)}:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(headingFont)}:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: '${escapeHtml(doc.typography.bodyFont)}', sans-serif; background: ${escapeHtml(background ?? "#fff")}; color: ${escapeHtml(text ?? "#111")}; }
-    h1, h2, h3 { font-family: '${escapeHtml(doc.typography.headingFont)}', sans-serif; }
+    body { font-family: '${escapeHtml(bodyFont)}', sans-serif; background: ${escapeHtml(background ?? "#fff")}; color: ${escapeHtml(text ?? "#111")}; }
+    h1, h2, h3 { font-family: '${escapeHtml(headingFont)}', sans-serif; }
     section { padding: 4rem 2rem; max-width: 1000px; margin: 0 auto; }
     .hero { text-align: center; padding: 6rem 2rem; background: ${escapeHtml(primary ?? "#6366f1")}; color: #fff; max-width: 100%; }
     .hero h1 { font-size: 2.5rem; margin-bottom: 1rem; }
